@@ -182,7 +182,7 @@ plt.show()
 
 
     
-![png](grover_files/grover_12_1.png)
+![png](https://github.com/qperfect-io/MimiqDemos/blob/main/Grover/grover_files/grover_12_1.png)
     
 
 
