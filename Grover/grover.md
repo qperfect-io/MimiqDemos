@@ -1,6 +1,9 @@
 # MIMIQ demo - Grover's Algorithm
 QPerfect 2025 https://qperfect.io/
 
+The interactive version of this demo can be found at https://github.com/qperfect-io/MimiqDemos/blob/main/Grover/grover.ipynb
+
+## Introduction and context
 Grover's algorithm is a foundational quantum algorithm that offers a quadratic speedup for unstructured search problems. Introduced by Lov Grover in 1996, it efficiently finds a specific item in an unsorted database of size $N$ using only $O(\sqrt{N})$ queries to the database, compared to the $O(N)$ queries required by classical algorithms. Grover's algorithm has broad applications, including in cryptography, optimization problems, pattern matching and machine learning and quantum complexity theory.
 
 ### Problem definition
@@ -27,7 +30,7 @@ The number of iterations is typically chosen to be $\lfloor \pi/4 \cdot \sqrt{N}
 - Circuit primitives: Diffusion, Polynomial Oracle
 - Use of the z-register to store state amplitudes midcircuit 
 
-### MIMIQ implementation
+## MIMIQ implementation
 In this demo we will first implement a simple version of Grover's algorithm to identify desired bit string among $2^n$ possible bitstrings.
 
 Let's start by importing the required packages, and connecting to the MIMIQ service
@@ -44,25 +47,13 @@ conn.connect()
 ```
 
 
-
-
-    Connection:
-    ├── url: https://mimiq.qperfect.io/api
-    ├── Computing time: 555/10000 minutes
-    ├── Executions: 705/10000
-    ├── Max time limit is: Infinite
-    ├── Default time limit is: 30 minutes
-    └── status: open
-
-
-
 Next we can define Grover's algorithm. The following function takes the number of iterations and an oracle circuit as inputs and generates the full circuit for Grover's algorithm.
 
 
 ```python
 def grover(iterations, oracle_circ, callback=None):
     """
-    Implement Grover's algorithm.
+    MIMIQ circuit for Grover's algorithm.
     
     Args:
     iterations (int): Number of Grover iterations.
@@ -188,11 +179,11 @@ plt.show()
 
 We see that the success probability reaches very close to 1 after the expected number of iterations (12 in this case)
 
-### Pushing the limits with MIMIQ
+## Going further with MIMIQ
 
 The oracle in Grover's algorithm is often a source of confusion, particularly since in the preceeding example it seems that the Oracle already contains the solution. However that is not necessary. The oracle in Grover's algorithm serves as a black box that can identify the correct state without revealing it directly. To demonstrate this, we will implement a more advanced oracle which can be used to factor composite integers.
 
-## Explanation of the factoring algorithm
+### Explanation of the factoring algorithm
 
 **For a given integer $N$ we aim to find its factors $p$, $q$ which satisfy $N=pq$.**
 
@@ -252,8 +243,8 @@ def Multiply(X, Y, Z):
     return circ
 ```
 
-## Factorizing circuit
-Now we set up the circuit which uses Grovers algorithm for factorization. We include a single Measure instruction over the qubits in the X register as our output.
+### Factorizing circuit
+Next, we construct the quantum circuit that implements Grover's algorithm for factorization. The circuit includes $K$ Grover iterations, each consisting of the multiplication operator oracle followed by the diffusion operator acting on the X and Y registers. To capture the result, we apply a single Measure instruction to the qubits in the X register. The outcome of this measurement will provide us with the information needed to determine the factors of our input number.
 
 
 ```python
@@ -286,28 +277,22 @@ def factorize(N: int, K: int, nx: int, ny: int):
 
         # Diffusion
         circ.push(Diffusion(nx+ny), *(X+Y))
-        circ.push(GateRY(-np.pi), X+Y) # this is here to correct a small bug
         
     circ.push(Measure(),X,X)
     return circ
 ```
 
-## Inputs
+### Create and run the circuit on the MIMIQ server and sample the outputs
 
 
 ```python
 N = 143 # 13 * 11
 nx, ny = 4,4
-```
-
-### Run the circuit on the MIMIQ server and sample the outputs
-
-
-```python
-circuit = factorize(N, 8, nx, ny)
+iterations = 8
+circuit = factorize(N, iterations, nx, ny)
 
 # Submit the job
-job = conn.execute(circuit, nsamples=100)
+job = conn.execute(circuit)
 
 # Return the results of the simulation
 res = conn.get_result(job)
@@ -317,7 +302,7 @@ res = conn.get_result(job)
 
 
 ```python
-#Get the histogram from the result
+#Get the histogram of measurement results
 histogram = res.histogram()
 
 # Convert binary strings to integers and create a sorted list of results
@@ -339,10 +324,23 @@ print(f"\nTotal shots: {len(res.cstates)}")
     Measurement results:
     Bitstring  Decimal    Occurrences  Probability 
     --------------------------------------------------
-    1011       13         54           0.5400
-    1101       11         46           0.4600
+    1011       13         505          0.5050
+    1101       11         490          0.4900
+    0000       0          2            0.0020
+    1001       9          1            0.0010
+    0100       2          1            0.0010
+    0001       8          1            0.0010
     
-    Total shots: 100
+    Total shots: 1000
 
 
-We see that the quantum factorization simulation returns in the X register the correct factors 1011 (decimal 13) and 1101 (decimal 11), each approximately half the time.
+The results of our quantum factorization simulation are remarkably successful. The X register consistently returns two outcomes, each occurring with approximately equal probability:
+
+    1011 in binary, which is equivalent to 13 in decimal
+    1101 in binary, which is equivalent to 11 in decimal
+
+These outcomes are precisely the correct factors of our target number, as 13 * 11 = 143.
+
+While Grover's algorithm doesn't offer the superpolynomial speedup that Shor's factoring algorithm can achieve, it effectively demonstrates how quantum algorithms can be applied to significant optimization and search problems.
+
+We encourage you to experiment with different values of $N$, adjusting the size of the solution registers accordingly. For a deeper dive into this topic, we recommend the publication available at https://arxiv.org/abs/2312.10054. This paper details a variant of this algorithm that successfully factored numbers as large as 30,398,263,859 (7393 × 4,111,763) using MIMIQ!
