@@ -1,9 +1,7 @@
 # MIMIQ demo - Grover's Algorithm
-QPerfect 2025 https://docs.qperfect.io/
+QPerfect 2025 https://qperfect.io/
 
-Grover's algorithm is a foundational quantum algorithm that offers a quadratic speedup for unstructured search problems. Introduced by Lov Grover in 1996, it efficiently finds a specific item in an unsorted database of size $N$ using only $O(\sqrt{N})$ queries to the database, compared to the $O(N)$ queries required by classical algorithms.
-
-Grover's algorithm has broad applications, including in cryptography, optimization problems, pattern matching and machine learning and quantum complexity theory.
+Grover's algorithm is a foundational quantum algorithm that offers a quadratic speedup for unstructured search problems. Introduced by Lov Grover in 1996, it efficiently finds a specific item in an unsorted database of size $N$ using only $O(\sqrt{N})$ queries to the database, compared to the $O(N)$ queries required by classical algorithms. Grover's algorithm has broad applications, including in cryptography, optimization problems, pattern matching and machine learning and quantum complexity theory.
 
 ### Problem definition
 
@@ -24,6 +22,10 @@ The standard implementation of Grover's algorithm consists of the following step
 
 The number of iterations is typically chosen to be $\lfloor \pi/4 \cdot \sqrt{N} \rfloor$ which provides the optimal probability of finding the target state.
 
+### MIMIQ Features used in this demo
+- Multicontrol gates
+- Circuit primitives: Diffusion, Polynomial Oracle
+- Use of the z-register to store state amplitudes midcircuit 
 
 ### MIMIQ implementation
 In this demo we will first implement a simple version of Grover's algorithm to identify desired bit string among $2^n$ possible bitstrings.
@@ -46,19 +48,19 @@ conn.connect()
 
     Connection:
     ├── url: https://mimiq.qperfect.io/api
-    ├── Computing time: 552/10000 minutes
-    ├── Executions: 681/10000
+    ├── Computing time: 555/10000 minutes
+    ├── Executions: 705/10000
     ├── Max time limit is: Infinite
     ├── Default time limit is: 30 minutes
     └── status: open
 
 
 
-Lets start by defining Grover's algorithm. The following function takes the number of iterations and an oracle circuit as inputs and generates the full Grover's algorithm.
+Next we can define Grover's algorithm. The following function takes the number of iterations and an oracle circuit as inputs and generates the full circuit for Grover's algorithm.
 
 
 ```python
-def grover(iterations, oracle_circ):
+def grover(iterations, oracle_circ, callback=None):
     """
     Implement Grover's algorithm.
     
@@ -75,70 +77,90 @@ def grover(iterations, oracle_circ):
     # Create the uniform superposition state
     circ.push(GateH(), range(nq))
     
-    for _ in range(iterations):
+    for i in range(iterations):    
+        # Callback for storing the amplitudes of
+        # the target strings in the z register
+        if callback:
+            circ.append(callback(i))
+            
         # Apply the oracle operator
         circ.append(oracle_circ)
         
         # Apply the diffusion operator
-        circ.push(Diffusion(nq), *range(nq))
-    
+        circ.push(Diffusion(nq), *range(nq))    
     return circ
 ```
 
-We can now define the oracle operator. As a simple example we consider a circuit which flips the phase of one or more desired bitstrings, which will serve as our target states. In MIMIQ a phase flip for a desired bitstring can be easily implemented using a multicontrolled-Z gate
+We'll also define a callback function for adding an `Amplitude` instruction to the circuit which will put the probability amplitude of the state corresponding to a given bitstring for each iteration in the z-register for plotting.
 
 
 ```python
-def oracle(bitstrings):
+def amplitude_callback(bitstring):
+    def callback(i):
+        circ = Circuit()
+        circ.push(Amplitude(bitstring), i)
+        return circ
+    return callback
+```
+
+Finally we need to define the oracle operator. As a simple example we consider a circuit which flips the phase of one or more desired bitstrings, which will serve as our target states. In MIMIQ a phase flip for a desired bitstring can be easily implemented using a multicontrolled-Z gate
+
+
+```python
+def oracle(bitstring):
     """
-    Create an oracle circuit that flips the phase of desired bitstrings.
+    Create an oracle circuit that flips the phase of a desired bitstring.
     
     Args:
-    bitstrings (list of BitString): Target bitstrings to mark.
+    bitstring: Target bitstring to mark.
     
     Returns:
-    Circuit: Oracle circuit that marks the target states.
+    Circuit: Oracle circuit that marks the target state.
     """
-    nq = len(bitstrings[0])
+    nq = len(bitstring)
     circ = Circuit()
 
-    for bs in bitstrings:
-        # Apply X gates where bits are 0
-        for i, b in enumerate(bs):
-            if not b:
-                circ.push(GateX(), i)
-        
-        # Multi-controlled Z gate
-        circ.push(Control(nq-1, GateZ()), *range(nq))
-        
-        # Uncompute X gates
-        for i, b in enumerate(bs):
-            if not b:
-                circ.push(GateX(),i)
+    # Apply X gates where bits are 0
+    for i, b in enumerate(bitstring):
+        if not b:
+            circ.push(GateX(), i)
+
+    # Multi-controlled Z gate
+    circ.push(Control(nq-1, GateZ()), *range(nq))
+
+    # Uncompute X gates
+    for i, b in enumerate(bitstring):
+        if not b:
+            circ.push(GateX(),i)
+            
     return circ
 ```
+
+Now we are ready to test the algorithm on MIMIQ. Here we specify a simple target bitstring and generate the circuit with callback function. This allows to obtain the relevant state amplitude in each iteration with one execution.
 
 
 ```python
 # define parameters
-targetstr = [BitString([1,0,1,0,1,0,1,0])]
-iterations = range(25)
-n, k = len(targetstr[0]), len(targetstr)
+targetstr = BitString([1,0,1,0,1,0,1,0])
+maxiter=25
+n = len(targetstr)
 
 # generate circuits and execute
-circuits = [grover(i, oracle(targetstr)) for i in iterations]
+circuit = grover(maxiter, oracle(targetstr), callback=amplitude_callback(targetstr))
 
-job = conn.execute(circuits, bitstrings=targetstr, algorithm="statevector")
-results = conn.get_results(job)
+job = conn.execute(circuit, bitstrings=[targetstr], algorithm="statevector")
+results = conn.get_result(job)
+```
 
+We can then plot the probability of the final state in the target bitstring as a function of the number of iterations, which will show a characteristic oscillatory behavior.
+
+
+```python
 # Calculate success probabilities
-success_probs = [
-    [abs(a)**2 for a in r.amplitudes.values()]
-    for r in results
-]
+success_probs = [abs(a)**2 for a in results.zstates[0]]
 
 # estimate the optimal number of iterations
-iterations = int(np.floor(np.pi/4*np.sqrt(2**n/k)))
+iterations = int(np.floor(np.pi/4*np.sqrt(2**n)))
 
 # display results
 print(f"Grover search algorithm: target strings {targetstr}")
@@ -153,40 +175,26 @@ plt.grid(True)
 plt.show()
 ```
 
-    Grover search algorithm: target strings [bs"10101010"]
+    Grover search algorithm: target strings 8-qubit BitString with 4 non-zero qubits:
+    ├── |10101010⟩
+    └── non-zero qubits: [0, 2, 4, 6]
 
 
 
     
-![png](grover_files/grover_7_1.png)
+![png](grover_files/grover_12_1.png)
     
 
 
-We can also print the results for the optimal number of iterations, which shows a high probability of sampling the target bitstring
-
-
-```python
-results[iterations]
-```
-
-
-
-
-<table><tbody><tr><td colspan=2 style="text-align:center;"><strong>QCSResults</strong></td></tr><tr><td colspan=2><hr></td></tr><tr><td colspan=2 style="text-align:center;"><strong>Simulator</strong></td></tr><tr><td colspan=2 style="text-align:center;">MIMIQ-StateVector 0.18.2</td></tr><tr><td colspan=2><hr></td></tr><tr><td colspan=2 style="text-align:center;"><strong>Timings</strong></td></tr><tr><td style="text-align:left;">parse time</td><td>0.000279896s</td></tr><tr><td style="text-align:left;">apply time</td><td>4.201e-05s</td></tr><tr><td style="text-align:left;">total time</td><td>0.000446504s</td></tr><tr><td style="text-align:left;">amplitudes time</td><td>6e-07s</td></tr><tr><td style="text-align:left;">compression time</td><td>1.824e-05s</td></tr><tr><td style="text-align:left;">sample time</td><td>5.5689e-05s</td></tr><tr><td colspan=2><hr></td></tr><tr><td colspan=2></td></tr><tr><td colspan=2 style="text-align:center;"><strong>Fidelity estimate</strong></td></tr><tr><td style="text-align:left;">Single run value</td><td>1.0</td></tr><tr><td colspan=2><hr></td></tr><tr><td colspan=2></td></tr><tr><td colspan=2 style="text-align:center;"><strong>Average multiqubit error estimate</strong></td></tr><tr><td style="text-align:left;">Single run value</td><td>0.0</td></tr><tr><td colspan=2><hr></td></tr><tr><td colspan=2></td></tr><tr><td colspan=2 style="text-align:center;"><strong>Statistics</strong></td></tr><tr><td style="text-align:left;">Number of executions</td><td>1</td></tr><tr><td style="text-align:left;">Number of samples</td><td>1000</td></tr><tr><td style="text-align:left;">Number of amplitudes</td><td>1</td></tr><tr><td colspan=2><hr></td></tr><tr><td colspan=2></td></tr><tr><td colspan=2 style="text-align:center;"><strong>Samples</strong></td></tr><tr><td style="text-align:left;font-family: monospace;">0xaa</td><td style="text-align:left;font-family: monospace;">10101010</td><td style="font-family: monospace;">1000</td></tr><tr><td colspan=2><hr></td></tr><tr><td colspan=2></td></tr><tr><td colspan=2 style="text-align:center;"><strong>Statevector Amplitudes</strong></td></tr><tr><td style="text-align:left;">0xaa</td><td style="text-align:left;">10101010</td><td>1.000+0.000j</td></tr><tr><td colspan=2><hr></td></tr></tbody></table>
-
-
+We see that the success probability reaches very close to 1 after the expected number of iterations (12 in this case)
 
 ### Pushing the limits with MIMIQ
 
 The oracle in Grover's algorithm is often a source of confusion, particularly since in the preceeding example it seems that the Oracle already contains the solution. However that is not necessary. The oracle in Grover's algorithm serves as a black box that can identify the correct state without revealing it directly. To demonstrate this, we will implement a more advanced oracle which can be used to factor composite integers.
 
-### <center> **For a given integer $N$ we aim to find its factors $p$, $q$ which satisfy $N=pq$.**</center>
-
-However, to date, the best experimental demonstrations of factoring using quantum computers have been limited to very small numbers, e.g., $21=3\times 7$. Thus there is great interest in developing optimized versions of Shor's algorithm and new approaches to quantum factoring which can run on near term quantum computers.
-
-### <center> **In this demo we will implement an optimized factoring algorithm which exploits a quantum search to factor numbers far larger what can be done on any quantum computer today** </center>
-
 ## Explanation of the factoring algorithm
+
+**For a given integer $N$ we aim to find its factors $p$, $q$ which satisfy $N=pq$.**
 
 We can formulate the factoring problem as a search problem in which we aim to find the factors $p$,$q$ which satisfy 
 
@@ -200,12 +208,9 @@ The algorithm starts with the $X$ and $Y$ registers initialized in the uniform s
 This is followed by a loop with $K$ steps, where in each step an Oracle operator is applied to marks the solution state and the diffusion operator from Grover's algorithm is applied to increase the amplitude in the solution state. 
 
 The Oracle can be constructed in three steps:
-
-$$\begin{align}
-&|x,y\rangle|z=N\rangle \rightarrow |x,y\rangle|z=N-xy\rangle & \qquad \text{inverse multiplication}\\
-&|z=0\rangle \rightarrow -|z=0\rangle & \qquad \text{inverted multicontrol Z gate}\\
-&|x,y\rangle|z=N-xy\rangle \rightarrow |x,y\rangle|z=N\rangle & \qquad \text{multiplication}
-\end{align}$$
+- $|x,y\rangle|z=N\rangle \rightarrow |x,y\rangle|z=N-xy\rangle$ inverse multiplication
+- $|z=0\rangle \rightarrow -|z=0\rangle$ inverted multicontrol Z gate
+- $|x,y\rangle|z=N-xy\rangle \rightarrow |x,y\rangle|z=N\rangle$ multiplication
 
 i.e., the state where $N=xy$ will acquire a $\pi$ phase shift while all other states will remain unaffected. 
 
@@ -248,6 +253,7 @@ def Multiply(X, Y, Z):
 ```
 
 ## Factorizing circuit
+Now we set up the circuit which uses Grovers algorithm for factorization. We include a single Measure instruction over the qubits in the X register as our output.
 
 
 ```python
@@ -299,74 +305,44 @@ nx, ny = 4,4
 
 ```python
 circuit = factorize(N, 8, nx, ny)
+
 # Submit the job
 job = conn.execute(circuit, nsamples=100)
 
 # Return the results of the simulation
-res = conn.get_result(job, interval=0.1)
+res = conn.get_result(job)
 ```
-
-    [1, 1, 1, 1, 0, 0, 0, 1]
-
-
-
-```python
-res
-```
-
-
-
-
-<table><tbody><tr><td colspan=2 style="text-align:center;"><strong>QCSResults</strong></td></tr><tr><td colspan=2><hr></td></tr><tr><td colspan=2 style="text-align:center;"><strong>Simulator</strong></td></tr><tr><td colspan=2 style="text-align:center;">MIMIQ-MPS 0.17.0</td></tr><tr><td colspan=2><hr></td></tr><tr><td colspan=2 style="text-align:center;"><strong>Timings</strong></td></tr><tr><td style="text-align:left;">parse time</td><td>0.006067373s</td></tr><tr><td style="text-align:left;">apply time</td><td>31.937144514s</td></tr><tr><td style="text-align:left;">total time</td><td>34.148116215s</td></tr><tr><td style="text-align:left;">amplitudes time</td><td>3e-07s</td></tr><tr><td style="text-align:left;">compression time</td><td>2.199343538s</td></tr><tr><td style="text-align:left;">sample time</td><td>0.005220513s</td></tr><tr><td colspan=2><hr></td></tr><tr><td colspan=2></td></tr><tr><td colspan=2 style="text-align:center;"><strong>Fidelity estimate</strong></td></tr><tr><td style="text-align:left;">Single run value</td><td>1.0</td></tr><tr><td colspan=2><hr></td></tr><tr><td colspan=2></td></tr><tr><td colspan=2 style="text-align:center;"><strong>Average multiqubit error estimate</strong></td></tr><tr><td style="text-align:left;">Single run value</td><td>0.0</td></tr><tr><td colspan=2><hr></td></tr><tr><td colspan=2></td></tr><tr><td colspan=2 style="text-align:center;"><strong>Statistics</strong></td></tr><tr><td style="text-align:left;">Number of executions</td><td>1</td></tr><tr><td style="text-align:left;">Number of samples</td><td>100</td></tr><tr><td style="text-align:left;">Number of amplitudes</td><td>0</td></tr><tr><td colspan=2><hr></td></tr><tr><td colspan=2></td></tr><tr><td colspan=2 style="text-align:center;"><strong>Samples</strong></td></tr><tr><td style="text-align:left;font-family: monospace;">0xb</td><td style="text-align:left;font-family: monospace;">1011</td><td style="font-family: monospace;">50</td></tr><tr><td style="text-align:left;font-family: monospace;">0xd</td><td style="text-align:left;font-family: monospace;">1101</td><td style="font-family: monospace;">50</td></tr><tr><td colspan=2><hr></td></tr></tbody></table>
-
-
 
 ## Extract the output bitstrings and integer values
 
 
 ```python
-s = res.histogram()
-print(list(s.keys()))
-[int(ba.to01(), 2) for ba in s.keys()]
+#Get the histogram from the result
+histogram = res.histogram()
+
+# Convert binary strings to integers and create a sorted list of results
+sorted_results = sorted([int(bitarray.to01(), 2) for bitarray in histogram.keys()])
+
+# Print the results in a more readable format
+print("Measurement results:")
+print(f"{'Bitstring':<10} {'Decimal':<10} {'Occurrences':<12} {'Probability':<12}")
+print("-" * 50)
+for outcome, shots in histogram.items():
+    bitstring = outcome.to01()
+    decimal = BitString(outcome).tointeger()
+    probability = shots / len(res.cstates)
+    print(f"{bitstring:<10} {decimal:<10} {shots:<12} {probability:.4f}")
+
+print(f"\nTotal shots: {len(res.cstates)}")
 ```
 
-    [frozenbitarray('1011'), frozenbitarray('1101')]
-
-
-
-
-
-    [11, 13]
-
-
-
-### Plot Entanglement Map
-
-
-```python
-def grover(iterations, oracle_circ):
-    """
-    Implement Grover's algorithm.
+    Measurement results:
+    Bitstring  Decimal    Occurrences  Probability 
+    --------------------------------------------------
+    1011       13         54           0.5400
+    1101       11         46           0.4600
     
-    Args:
-    iterations (int): Number of Grover iterations.
-    oracle_circ (Circuit): Oracle circuit.
-    
-    Returns:
-    Circuit: The Grover's algorithm quantum circuit.
-    """
-    nq = oracle_circ.num_qubits()
-    circ = Circuit()
-    
-    # Create the uniform superposition state
-    circ.push(GateH(), range(nq))
+    Total shots: 100
 
-    for i in range(iterations):
-        # Apply the oracle operator
-        circ.append(oracle_circ)
-        # Apply the diffusion operator
-        circ.push(Diffusion(nq), *range(nq))
-        circ.push(VonNeumannEntropy(), range(nq), range(i*nq, i*nq + nq))
 
-    return circ
-```
+We see that the quantum factorization simulation returns in the X register the correct factors 1011 (decimal 13) and 1101 (decimal 11), each approximately half the time.
