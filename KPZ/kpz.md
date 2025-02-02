@@ -1,8 +1,7 @@
-# MIMIQ demo - KPZ Universality and the Heisenberg XXZ model
+# MIMIQ demo - The Heisenberg XXZ Model and KPZ Universality
 QPerfect 2025 https://qperfect.io/
 
 The interactive version of this demo can be found at https://github.com/qperfect-io/MimiqDemos/blob/main/KPZ/kpz.ipynb
-
 
 ## Introduction and context
 At the forefront of computational physics lies the "many-body problem" - a class of challenges that describe the behavior of matter and materials. This problem is not only one of the most computationally demanding in physics but is also likely to be the first arena where quantum computers demonstrate superiority over classical ones. For quantum simulation, a quantum advantage is achieved when a quantum computer can compute relevant quantities (e.g., magnetism, universal critical exponents) with a precision and accuracy better than any known classical methods.
@@ -48,7 +47,6 @@ from time import sleep
 conn = MimiqConnection()
 conn.connect()
 ```
-
 
 Next, we'll define the fSim (fermionic simulation) gate used by Google in their experiment. This gate is characterized by two parameters: theta and phi.
 
@@ -180,7 +178,7 @@ plt.ylabel("Site in 1D chain");
 
 
     
-![png](https://github.com/qperfect-io/MimiqDemos/blob/main/KPZ/kpz_files/kpz_15_0.png)
+![png](https://github.com/qperfect-io/MimiqDemos/blob/main/Grover/KPZ/kpz_files/kpz_15_0.png)
     
 
 
@@ -222,7 +220,7 @@ ax.set_ylabel('Probability');
 
 
     
-![png](https://github.com/qperfect-io/MimiqDemos/blob/main/KPZ/kpz_files/kpz_19_0.png)
+![png](https://github.com/qperfect-io/MimiqDemos/blob/main/Grover/KPZ/kpz_files/kpz_19_0.png)
     
 
 
@@ -425,11 +423,11 @@ plt.tight_layout()
 
 
     
-![png](https://github.com/qperfect-io/MimiqDemos/blob/main/KPZ/kpz_files/kpz_29_0.png)
+![png](https://github.com/qperfect-io/MimiqDemos/blob/main/Grover/KPZ/kpz_files/kpz_29_0.png)
     
 
 
-The simulations confirm that the mean transferred magnetization and variance closely follow the expected KPZ scaling of $t^{2/3}$ within sampling precision, aligning with the experiments reported in the Google paper (orange squares). We note that the experimental data appears slightly shifted up compared to the simulations, which upon closer inspection can also be seen in the exact simulataions presented in the paper. The estimated fidelity of the simulations gradually decreases with cycle number, reaching approximately 0.5 for the largest problem size (23 cycles = 46 qubits), without significantly impacting the observables. Compared to the Google paper, these simulations are substantially faster, typically taking minutes to run versus several hours on a large-scale GPU based statevector simulator, with minimal accuracy loss.
+The simulations confirm that the mean transferred magnetization and variance closely follow the expected KPZ scaling of $t^{2/3}$ within sampling precision, aligning with the experiments reported in the Google paper (orange squares). We note that the experimental data appears slightly shifted up compared to the simulations, which upon closer inspection can also be seen when comparing the data to the exact simulataions presented in the paper up to 18 cycles. The estimated full circuit fidelity of our simulations gradually decreases with cycle number, and is still quite high at approximately 0.6 for the largest problem size (23 cycles = 46 qubits) within a time of approximately 1 minute per sample, without significantly impacting the observables. Overall our simulations are substantially faster than what was reported in the Google paper using a large-scale GPU based statevector simulator, with minimal accuracy loss.
 
 MIMIQ's capabilities extend beyond this challenging many-body problem, which combines high entanglement with non-trivial observables. We encourage you to explore further using MIMIQ. For example, with MIMIQ you can:
 - Analyze of various quantum observables and their higher-order moments
