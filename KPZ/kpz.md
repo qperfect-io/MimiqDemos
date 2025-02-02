@@ -178,7 +178,7 @@ plt.ylabel("Site in 1D chain");
 
 
     
-![png](https://github.com/qperfect-io/MimiqDemos/blob/main/Grover/KPZ/kpz_files/kpz_15_0.png)
+![png](https://github.com/qperfect-io/MimiqDemos/blob/main/KPZ/kpz_files/kpz_15_0.png)
     
 
 
@@ -220,7 +220,7 @@ ax.set_ylabel('Probability');
 
 
     
-![png](https://github.com/qperfect-io/MimiqDemos/blob/main/Grover/KPZ/kpz_files/kpz_19_0.png)
+![png](https://github.com/qperfect-io/MimiqDemos/blob/main/KPZ/kpz_files/kpz_19_0.png)
     
 
 
@@ -423,7 +423,7 @@ plt.tight_layout()
 
 
     
-![png](https://github.com/qperfect-io/MimiqDemos/blob/main/Grover/KPZ/kpz_files/kpz_29_0.png)
+![png](https://github.com/qperfect-io/MimiqDemos/blob/main/KPZ/kpz_files/kpz_29_0.png)
     
 
 
