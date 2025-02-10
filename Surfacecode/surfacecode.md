@@ -1,7 +1,7 @@
 # MIMIQ demo - Surface Code
 QPerfect 2025 https://qperfect.io/
 
-The interactive version of this demo can be found at https://github.com/qperfect-io/MimiqDemos/blob/main/SurfaceCode/surfacecode.ipynb
+The interactive version of this demo can be found at https://github.com/qperfect-io/MimiqDemos/blob/main/Surfacecode/surfacecode.ipynb
 
 ## Introduction and context
 
@@ -132,7 +132,7 @@ plt.show()
 
 
     
-![png](https://github.com/qperfect-io/MimiqDemos/blob/main/surfacecode_files/surfacecode_7_0.png)
+![png](https://github.com/qperfect-io/MimiqDemos/blob/main/Surfacecode/surfacecode_files/surfacecode_7_0.png)
     
 
 
@@ -159,7 +159,7 @@ plt.show()
 
 
     
-![png](https://github.com/qperfect-io/MimiqDemos/blob/main/surfacecode_files/surfacecode_9_0.png)
+![png](https://github.com/qperfect-io/MimiqDemos/blob/main/Surfacecode/surfacecode_files/surfacecode_9_0.png)
     
 
 
@@ -313,7 +313,7 @@ plt.show()
 
 
     
-![png](https://github.com/qperfect-io/MimiqDemos/blob/main/surfacecode_files/surfacecode_16_0.png)
+![png](https://github.com/qperfect-io/MimiqDemos/blob/main/Surfacecode/surfacecode_files/surfacecode_16_0.png)
     
 
 
