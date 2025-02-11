@@ -22,7 +22,7 @@ Our experiment involves simulating this model using a 1D chain of spins (qubits)
 
 1. Initial State: We start with a product state where the left and right halves of the spin chain have average magnetizations of $\pm \tanh(\mu)$. As $\mu \rightarrow \infty$, we approach a pure domain-wall state, while $\mu \rightarrow 0$ leads towards infinite-temperature thermal state.
 
-2. Circuit Structure: The circuit comprises multiple cycles. Each cycle applies fSim gates to all neighboring pairs in the chain, alternating between odd and even bonds. In the limit $\theta, \phi \rightarrow 0$ this is equivalent to the Trotter–Suzuki expansion of the XXZ Hamiltonian, with $\Delta = \sin(\phi/2)/\sin(\theta). The number of qubits is fixed to twice the number of cycles.
+2. Circuit Structure: The circuit comprises multiple cycles. Each cycle applies fSim gates to all neighboring pairs in the chain, alternating between odd and even bonds. In the limit $\theta, \phi \rightarrow 0$ this is equivalent to the Trotter–Suzuki expansion of the XXZ Hamiltonian, with $\Delta = \sin(\phi/2)/\sin(\theta)$. The number of qubits is fixed to twice the number of cycles.
 
 3. Analysis: By examining the output states for various random input states, we extract the statistical moments of the transferred magnetization - essentially, the number of spins that flip from one half of the qubit chain to the other.
 
