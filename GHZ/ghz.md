@@ -4,11 +4,11 @@ QPerfect 2025 https://qperfect.io/
 The interactive version of this demo can be found at https://github.com/qperfect-io/MimiqDemos/blob/main/GHZ/ghz.ipynb
 
 ## Introduction and context
-The Greenberger-Horne-Zeilinger (GHZ) state represents a maximally entangled state of three or more qubits. The GHZ state is typically represented for three qubits as $\frac{1}{\sqrt{2}}(∣000\rangle+∣111\rangle)$. This state exemplifies notions of non-local correlations and violation of classical inequalities, and can be used to achieve enhanced performance for quantum sensing compared to non-entangled input states.
+The Greenberger-Horne-Zeilinger (GHZ) state represents a maximally entangled state of three or more qubits, typically expressed as $\frac{1}{\sqrt{2}}(∣000\rangle+∣111\rangle)$ (for three qubits). This state exemplifies notions of non-local correlations and violation of classical inequalities, and can be used to achieve enhanced performance for quantum sensing compared to non-entangled input states.
 
 GHZ state preparation has also become an important benchmark for quantum computers, demonstrating their ability to create and manipulate complex entangled states on larger and larger scales. In 2024, Quantinuum reported the largest GHZ state ever produced on a quantum computer with 50 qubits.
 
-In this demo, we'll use MIMIQ to explore and compare three different methods for implementing GHZ state preparation on quantum computers, simulating them exactly up to 50 qubits. We will demonstrate how to add and characterize noise in quantum circuits, and show how different circuit implementations can give drastically different performance on real quantum hardware.
+In this demo, we'll use MIMIQ to explore and compare three different methods for implementing GHZ state preparation protocols, simulating them exactly up to 50 qubits. We will demonstrate how to add and characterize noise in quantum circuits, and show how different circuit implementations can give drastically different performance when considering the constraints of real quantum hardware.
 
 This demonstration builds on a recent [blog post](https://egrettathula.wordpress.com/2024/03/24/efficient-circuit-for-ghz-state-preparation).
 
@@ -34,8 +34,6 @@ from time import sleep
 conn = MimiqConnection()
 conn.connect()
 ```
-
-
 
 We'll start by setting up some parameters for our experiments.
 
@@ -111,7 +109,7 @@ As expected, we see that the output states are predominantly $|111\ldots1\rangle
 
 ### Logarithmic depth implementation
 
-While the linear depth implementation is straightforward, it's not always optimal for real quantum computers. The sequential application of CNOT gates results in significant idle time where errors can accumulate. Moreover, some quantum hardware may prefer nearest-neighbor interactions.
+While the linear depth implementation is straightforward, it's not necessarily optimal. The sequential application of CNOT gates results in significant idle time where errors can accumulate.
 
 An alternative implementation proposed by [Cruz et al., 2019](https://onlinelibrary.wiley.com/doi/10.1002/qute.201900015) generates the GHZ state in logarithmic depth using long-range gates:
 
@@ -178,14 +176,12 @@ The results are identical to before. The choice between linear and logarithmic d
 
 MIMIQ offers several advantages over physical quantum computers for our study:
 1. No connectivity limitations between qubits
-2. Exact simulations at large scales (depending on entanglement)
-3. Efficient Matrix Product State (MPS) representation of GHZ states
+2. Possibility for both noisy and noise-free simulations
+3. Ability to simulate large scales via efficient Matrix Product State (MPS) methods
 
-These features allow us to simulate GHZ circuits with hundreds or even thousands of qubits, making MIMIQ ideal for benchmarking algorithms for real quantum computers.
+These features allow us to simulate GHZ circuits with hundreds or even thousands of qubits in the exact regime, making MIMIQ ideal for designing, testing and benchmarking quantum algorithms.
 
 In the following sections, we'll demonstrate how to efficiently generate GHZ states with 50 qubits and study the influence of gate errors and idle time errors using MIMIQ's noisy simulation capabilities.
-
-First lets set up some new parameters:
 
 ### Adding Noise To Simulations
 
@@ -249,7 +245,7 @@ def ghz_log_depth_with_idle(nqubits):
     return circ
 ```
 
-Now, let's construct our circuit and use MIMIQ's built-in methods to add depolarizing noise to each idle gate and CNOT gate. We'll start with a 50-qubit implementation:
+Now, let's construct our circuit and use MIMIQ's built-in methods to add depolarizing noise to each idle gate and CNOT gate. We'll start with a 50-qubit implementation, with the same noise amplitude for idle and CX gates:
 
 
 ```python
@@ -340,7 +336,9 @@ While the logarithmic depth circuit is optimal for unitary gates, GHZ states can
 
 This implementation is remarkable in that it allows to prepare an $N$-qubit GHZ state with a constant depth circuit (independent of $N$). MIMIQ readily supports such dynamic circuits, so let's find out how it works.
 
-First, let's define a conditional XOR operation to flip a qubit's state based on one or more classical bits:
+First, let's define a conditional XOR operation* to flip a qubit's state based on one or more classical bits:
+
+\* _for the moment we will implement the XOR operation using `IfStatement`, but soon MIMIQ will also feature more rich classical processing capabilities_
 
 
 ```python
@@ -471,4 +469,4 @@ Using MIMIQ we could implement and analyze these circuits for a 50-qubit system 
 2. **Dynamic Circuits**: A constant depth implementation, leveraging mid-circuit measurements and classical feedback, demonstrated remarkably improved performance. This approach produced correct samples approximately 50% of the time, with remaining errors primarily stemming from CX gate imperfections rather than idle time.
 3. **Fidelity assessment**: While sampling probabilities provide insights into the influence of noise and errors, they don't offer a complete picture of GHZ state fidelity, particularly regarding phase errors from depolarizing noise. For a more comprehensive analysis, we encourage you to try implementing the Parity Oscillation method to characterise the GHZ state preparation fidelity ([Cruz et al., 2019](https://arxiv.org/abs/1807.05572)).
 
-Our study highlights several insights for quantum computing practitioners: The choice of circuit implementation can dramatically impact the fidelity of quantum algorithms in noisy environments. Although relatively unexplored, dynamic circuits offer a promising approach for optimizing performance in the presence of noise. Quantum simulators like MIMIQ provide invaluable tools for testing and comparing circuit implementations at scales currently challenging for hardware, enabling deeper understanding and mitigation of noise effects in real-world quantum algorithm implementation.
+For quantum computing practitioners: The choice of circuit implementation can dramatically impact the fidelity of quantum algorithms in noisy environments. Although relatively unexplored, dynamic circuits offer a promising approach for optimizing performance in the presence of noise. Quantum simulators like MIMIQ provide invaluable tools for testing and comparing circuit implementations at scales currently challenging for hardware, enabling deeper understanding and mitigation of noise effects in real-world quantum algorithm implementation.
