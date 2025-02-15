@@ -336,7 +336,7 @@ This shows a big improvement! The two GHZ states are now the most probable outco
 
 While the logarithmic depth circuit is optimal for unitary gates, GHZ states can be prepared by a constant-depth quantum circuit using mid-circuit measurements, classical feedback, and classical computation ([Quek, Kaur, Wilde, 2022](https://arxiv.org/pdf/2206.15405), [Bäumer et al., 2024](https://arxiv.org/abs/2308.13065)) as depicted below:
 
-![](ghz-constant-depth-i.png)
+![](ghz_files/ghz-constant-depth-i.png)
 
 This implementation is remarkable in that it allows to prepare an $N$-qubit GHZ state with a constant depth circuit (independent of $N$). MIMIQ readily supports such dynamic circuits, so let's find out how it works.
 
@@ -457,7 +457,7 @@ plothistogram(res, num_outcomes=30, mimiqstyle=False)
 
 
 
-The results are impressive! Using dynamic circuits provides another substantial improvement. We now sample the GHZ states approximately 50% of the time, with most remaining errors stemming from CNOT gates rather than idle errors.
+The results are impressive! Using dynamic circuits provides another substantial improvement. We now sample the GHZ states approximately 40% of the time, with most remaining errors stemming from CNOT gates rather than idle errors.
 
 ## Summary and Conclusions
 
